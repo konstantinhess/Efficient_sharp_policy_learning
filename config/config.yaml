@@ -1,0 +1,110 @@
+# Configurations
+
+# General experiment configurations
+exp:
+  global_seed: 0                    # global seed
+  global_num_epochs: 300
+  patience: 10                     # early stopping patience
+  logging: True                     # Logging to MlFlow
+  mlflow_uri: http://127.0.0.1:3336 
+
+# Data
+data:
+
+  # Synthetic data configurations
+  synthetic:
+    gamma_data: 5
+    n_samples_train: 5000
+    nuisance_split: 0.5 # Proportion of training samples for nuisance functions (rho)
+    val_split: 0.2
+    n_samples_test: 5000
+    n_features: 1
+    n_treatments: 2
+    seed: 0
+    batch_size: 64
+
+  # Real data configurations
+  real_world:
+    selection_bias: 0.6 # number between 0 and 1: larger values for stronger unobserved confounding based on RSBP
+    data_path: ../data/stroke_data_preprocessed.csv
+    n_samples_train: 5000 # n_samples_train + n_samples_test must be lesser than or equal to 18449
+    nuisance_split: 0.5 # Proportion of training samples for nuisance functions (rho)
+    val_split: 0.2
+    n_samples_test: 10000 # n_samples_train + n_samples_test must be lesser than or equal to 18449
+    n_features: 12
+    n_treatments: 4
+    seed: 0
+    batch_size: 64
+
+
+# Model configs
+models:
+  gamma_model: ${data.synthetic.gamma_data}                        # sensitivity parameter
+
+  # Nuisance models
+  nuisance:
+
+    # Propensity model
+    propensity_model:
+      input_dim: ${data.synthetic.n_features}
+      n_treatments: ${data.synthetic.n_treatments}
+      lr: 0.001
+      num_epochs: ${exp.global_num_epochs}
+
+    # Conditional quantile model
+    quantile_model:
+      input_dim: ${data.synthetic.n_features}
+      n_treatments: ${data.synthetic.n_treatments}
+      alpha_plus: ${eval:"${models.gamma_model} / (1 + ${models.gamma_model})"}
+      alpha_minus: ${eval:"1 / (1 + ${models.gamma_model})"}
+      lr: 0.001
+      num_epochs: ${exp.global_num_epochs}
+
+    # Outcome model
+    outcome_model:
+      input_dim: ${data.synthetic.n_features}
+      n_treatments: ${data.synthetic.n_treatments}
+      lr: 0.001
+      num_epochs: ${exp.global_num_epochs}
+
+  # Policy learners
+  policy:
+
+    # Doubly robust estimator (biased)
+    doubly_robust:
+      gamma: ${models.gamma_model}
+      lr: 0.001
+      num_epochs: ${exp.global_num_epochs}
+
+    # Direct method (biased)
+    direct_method:
+      gamma: ${models.gamma_model}
+      lr: 0.001
+      num_epochs: ${exp.global_num_epochs}
+
+    # Inverse propensity weighting (biased)
+    ipw:
+      gamma: ${models.gamma_model}
+      lr: 0.001
+      num_epochs: ${exp.global_num_epochs}
+
+    # Baseline minimax estimator (unbiased)
+    baseline_minimax:
+      gamma: ${models.gamma_model}
+      baseline_policy: None
+      lr: 0.001
+      num_epochs: ${exp.global_num_epochs}
+
+    # Plug-in sharp bound estimator (unbiased)
+    plug_in:
+      gamma: ${models.gamma_model}
+      bound_type: upper
+      lr: 0.001
+      num_epochs: ${exp.global_num_epochs}
+
+    # Efficient sharp bound estimator (unbiased)
+    sharp_efficient:
+      gamma: ${models.gamma_model}
+      bound_type: upper
+      lr: 0.001
+      num_epochs: ${exp.global_num_epochs}
