@@ -99,9 +99,8 @@ def main(cfg: DictConfig):
             # 4) Evaluate
             ipw_predictions = torch.softmax(ipw_model.policy(torch.tensor(RWdataset.X_test).float()), dim=1).detach().numpy()
             ipw_value = RWdataset.evaluate_policy(ipw_predictions)
-            randomized_value = RWdataset.evaluate_policy(np.ones(ipw_predictions.shape) / ipw_predictions.shape[1])
 
-            regret = ipw_value - randomized_value
+            regret = ipw_value - RWdataset.Y_test.mean()
 
             # Log regret as a metric
             mlflow.log_metric("regret", regret)

@@ -25,7 +25,7 @@ def main(cfg: DictConfig):
     if cfg.exp.logging:
         mlflow.set_tracking_uri(cfg.exp.mlflow_uri)
         mlflow.set_experiment("RWD_DR")
-
+        
         with mlflow.start_run():
             # Log parameters under `exp`
             mlflow.log_params(OmegaConf.to_container(cfg.exp, resolve=True))
@@ -105,7 +105,7 @@ def main(cfg: DictConfig):
                                    lr=cfg.models.policy.doubly_robust.lr)
 
             dr_trainer = L.Trainer(max_epochs=cfg.models.policy.doubly_robust.num_epochs,
-                                   callbacks=[dr_early_stopping])#, logger=mlflow_logger)
+                                   callbacks=[dr_early_stopping])
             dr_trainer.fit(dr_model, policy_train_loader, policy_val_loader)
 
 
@@ -113,9 +113,8 @@ def main(cfg: DictConfig):
             # 4) Evaluate
             dr_predictions = torch.softmax(dr_model.policy(torch.tensor(RWdataset.X_test).float()), dim=1).detach().numpy()
             dr_value = RWdataset.evaluate_policy(dr_predictions)
-            randomized_value = RWdataset.evaluate_policy(np.ones(dr_predictions.shape) / dr_predictions.shape[1])
 
-            regret = dr_value - randomized_value
+            regret = dr_value - RWdataset.Y_test.mean()
 
             # Log regret as a metric
             mlflow.log_metric("regret", regret)

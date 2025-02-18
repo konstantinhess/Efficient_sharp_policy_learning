@@ -101,8 +101,8 @@ def main(cfg: DictConfig):
             # 4) Evaluate
             baseline_minimax_predictions = torch.softmax(baseline_minimax_model.policy(torch.tensor(RWdataset.X_test).float()), dim=1).detach().numpy()
             baseline_minimax_value = RWdataset.evaluate_policy(baseline_minimax_predictions)
-            randomized_value = RWdataset.evaluate_policy(np.ones(baseline_minimax_predictions.shape) / baseline_minimax_predictions.shape[1])
 
+            randomized_value = RWdataset.Y_test.mean()
             regret = baseline_minimax_value - randomized_value
 
             # Log regret as a metric
